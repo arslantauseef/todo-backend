@@ -10,7 +10,7 @@
     "dev": "tsx watch src/srv/server.ts",
     "build": "tsc",
     "start": "node dist/srv/server.js",
-    "migrate": "tsx src/database/migrate.ts"
+    "migrate": "tsx src/database/migrate/migrate.ts"
   },
   "dependencies": {
     "argon2": "^0.45.1",
