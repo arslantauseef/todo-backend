@@ -5,7 +5,7 @@ declare global {
     interface Request {
       auth?: {
         userId: string,
-        role: "Administrator" | "Moderator" | "User"
+        role: "Admin" | "Moderator" | "User"
       };
     }
   }

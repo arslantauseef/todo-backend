@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 
 type AuthTokenPayload = {
   sub: string;
-  role: "Administrator" | "Moderator" | "User";
+  role: "Admin" | "Moderator" | "User";
 };
 
 export const requestAuth = (
@@ -30,9 +30,9 @@ export const requestAuth = (
 
     if (
       typeof decoded.sub !== "string" ||
-      !["User", "Moderator", "Administrator"].includes(decoded.role)
+      !["User", "Moderator", "Admin"].includes(decoded.role)
     ) {
-      res.status(401).json({
+      return res.status(401).json({
         message: "Invalid Token",
       });
     }
@@ -44,6 +44,8 @@ export const requestAuth = (
 
     next();
   } catch (error) {
-    message: `Internal Error: ${error}`;
+    res.status(400).json({
+      message: `Internal Error: ${error}`,
+    });
   }
 };

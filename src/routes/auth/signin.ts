@@ -1,6 +1,7 @@
 import Router from "express";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken"
+import crypto from "node:crypto"
 import { pool } from "../../database/pool/pool.js";
 
 export const signInRouter = Router();
@@ -45,7 +46,7 @@ signInRouter.post("/signin", async (req, res) => {
 
     const user = result.rows[0];
 
-    const passwordsMatched = argon2.verify(user.hashed_password, password);
+    const passwordsMatched = await argon2.verify(user.hashed_password, password);
     if (!passwordsMatched)
       return res.status(401).json({
         message: "Invalid email or password",
@@ -56,7 +57,7 @@ signInRouter.post("/signin", async (req, res) => {
       throw new Error("JWT_SECRET is missing value")
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       {
         sub: String(user.id),
         role: user.role
@@ -67,12 +68,33 @@ signInRouter.post("/signin", async (req, res) => {
       }
     )
 
-    res.cookie("accessToken", token, {
+    const refreshToken = crypto.randomBytes(64).toString("hex")
+    const refreshTokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex")
+    await pool.query(`
+      INSERT INTO refresh_token (
+      user_id,
+      token_hash,
+      expires_at
+      )
+      VALUES ($1, $2, NOW() + INTERVAL '7 DAYS')
+      `, [
+        user.id,
+        refreshTokenHash
+      ])
+
+    res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
-      maxAge: 15 * 60 * 1000,
+      maxAge: 1 * 60 * 1000,
       path: "/"
+    })
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/auth"
     })
 
 
